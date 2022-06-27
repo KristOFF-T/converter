@@ -5,43 +5,11 @@
 
 #include "second.hpp"
 
-std::string convert(int ins, int ons, std::string num, int format) {
-    std::string result;
-
-    int64_t value = c2dn(num, ins);
-    std::vector<int> intVec = getIntVec(value, ons);
-
-    result = convertIntVec(intVec, ons, format);
-
-    return result;
-}
-
-std::string lister(int ns, int start, int end, int step, int format) {
-    std::string numStr, outStr;
-    bool done;
-    for(int i=start; i<end; i += step) {
-        numStr = convert(10, ns, std::to_string(i), format);
-        
-        std::string indexStr = std::to_string(i)+": ";
-        while(indexStr.length() < std::to_string(end).length()+2) indexStr.push_back(' ');
-        outStr += indexStr + numStr + "\n";
-
-        
-        if(outStr.length() > 20000) {
-            std::cout << outStr;
-            outStr = "";
-        }
-    }
-
-    return outStr;
-}
-
 // main function
 int main() {
     int mode;
     while(1) {
         std::cout
-            << "What would you like to do?" << '\n'
             << "1: Convert numbers"    << '\n'
             << "2: List numbers"       << '\n'
             << "3: Convert colors"     << '\n';
@@ -58,7 +26,7 @@ int main() {
                     << "2: mayan"   << '\n'
                     << "3: shadoks" << '\n';
                 
-                format = inputInt("format: ");
+                format = inputInt("a: ");
                 std::cout << '\n';
                 if(format > 3 || format < 1) continue;
 
@@ -106,85 +74,78 @@ int main() {
                 }
             }
 
-
         // color converter
         } else if(mode == 3) {
 
             // get convert mode
-            int convertMode = 0;
+            int cm1 = 0;
+            int cm2 = 0;
             while(1) {
                 std::cout << '\n';
-                std::cout << "Select convert mode!" << '\n'
-                          << "1: rgb to hex"        << '\n'
-                          << "2: hex to rgb"        << '\n';
-                convertMode = inputInt("mode: ");
+                std::cout << "1: RGB"        << '\n'
+                          << "2: HEX"        << '\n'
+                          << "3: CMYK"       << '\n'
+                          << "4: HSV"        << '\n'
+                          << "5: HSL"        << '\n';
+
+                cm1 = inputInt("input:  ");
+                cm2 = inputInt("output: ");
                 std::cout << '\n';
-                if(convertMode == 1 || convertMode == 2) 
+                if((cm1 > 0 && cm1 < 5+1) && (cm2 > 0 && cm2 < 5+1)&& cm1 != cm2) 
                     break;
             }
 
-
-
             // main loop
             while(1) {
-                if(convertMode == 1) {
-                    bool validRGB = false;
-                    std::vector<int> rgb = {0, 0, 0};
-                    while(!validRGB) {
-                        validRGB = true;
-                        std::string inputStr = input("rgb: ");
-                        std::vector<std::string> rgbStr = splitStr(inputStr, ',');
-                        if(rgbStr.size() != 3) validRGB = false;
-                        
-                        for(int i=0; i<3; i++) {
-                            rgb[i] = std::stoi(rgbStr[i]);
-                        }
+                std::vector<int> rgb = {0,0,0};
+                if(cm1 == 1) {
+                    rgb = getValidRGB();
 
-                        for(int v : rgb) {
-                            
-                            if(v < 0 || v > 255)
-                                validRGB = false;
+                } else if(cm1 == 2) {
+                    std::string hexStr = getValidHEX();
+                    rgb = HEX2RGB(hexStr);
 
-                        }
-                    }
+                } else if(cm1 == 3) {
+                    std::vector<int> cmyk = getValidCMYK();
+                    //std::cout << "cmyk: " << cmyk[0] << ',' << cmyk[1] << ',' << cmyk[2] << ',' << cmyk[3] << '\n';
+                    rgb = CMYK2RGB(cmyk);
 
-                    std::string result = "# ";
-
-                    for(int v : rgb) {
-                        std::string newStr = convert(10, 16, std::to_string(v), 1);
-                        if(newStr.length() < 2) newStr = '0' + newStr;
-                        result += newStr;
-                    }
-
-                    std::cout << "hex: " << result << "\n\n";
-
-                } else { // convertMode == 2
-                    std::string hexStr;
-                    while(1) {
-                        hexStr = input("hex: # ");
-                        if(hexStr.length() == 6) break;
-                    }
+                } else if(cm1 == 4) {
+                    std::vector<int> hsv = getValidHS('V');
+                    rgb = HSV2RGB(hsv);
+                    //std::cout << rgb[0] << '\n';
+                } else if(cm1 == 5) {
+                    std::vector<int> hsl = getValidHS('L');
+                    rgb = HSL2RGB(hsl);
                     
-                    std::vector<int> rgb = {0, 0, 0};
-                    std::vector<std::string> hexRgb = {"", "", ""};
-
-                    for(int i=0; i<3; i++) {
-                        std::string v = "";
-                        v = v + hexStr[i*2];
-                        v = v + hexStr[i*2+1];
-                        //std::cout << v << '\n';
-                        hexRgb[i] = v;
-                    }
-                    //std::cout << "hex: " << hexRgb[0] << ' ' << hexRgb[1] << ' ' << hexRgb[2] << '\n';
-
-                    for(int i = 0; i<3; i++) {
-                        int v = c2dn(hexRgb[i], 16);
-                        //std::cout << v << '\n';
-                        rgb[i] = v;
-                    }
-
-                    std::cout << "rgb: " << rgb[0] << "," << rgb[1] << "," << rgb[2] << "\n\n";
+                    
                 }
+
+
+
+                if(cm2 == 1) {
+                    std::cout << "RGB: " << rgb[0] << "," << rgb[1] << "," << rgb[2];
+
+                } else if(cm2 == 2) {
+                    std::string hex = RGB2HEX(rgb);
+                    std::cout << "HEX: # " << hex;
+
+                } else if(cm2 == 3) {
+                    std::vector<int> cmyk = RGB2CMYK(rgb);
+                    std::cout << "CMYK: " << cmyk[0] << ',' << cmyk[1] << ','
+                                          << cmyk[2] << ',' << cmyk[3];
+
+                } else if(cm2 == 4) {
+                    std::vector<int> hsv = RGB2HSV(rgb);
+                    std::cout << "HSV: " << hsv[0] << ',' << hsv[1] << ',' << hsv[2];
+                
+                } else if(cm2 == 5) {
+                    std::vector<int> hsl = RGB2HSL(rgb);
+                    std::cout << "HSL: " << hsl[0] << ',' << hsl[1] << ',' << hsl[2];
+
+                }
+
+                std::cout << "\n\n";
             }
         }
     }
